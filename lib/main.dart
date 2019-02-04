@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:movie_finder/model/model.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+const key = '';
 
 void main() => runApp(MyApp());
 
@@ -9,16 +15,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData.dark(),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Movie Finder'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
-
-
   final String title;
 
   @override
@@ -26,12 +29,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  List<Movie> movies = List();
+  bool hasLoaded = true;
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  final PublishSubject subject = PublishSubject<String>();
+
+  @override
+  void dispose() {
+    subject.close();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    subject.stream.debounce(Duration(milliseconds: 400)).listen(searchMovies);
   }
 
   @override
@@ -40,25 +53,71 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+      body: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              onChanged: (String string) => (subject.add(string)),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+          ),
+          Expanded(
+              child: Center(
+                  child:
+                      hasLoaded ? Container() : CircularProgressIndicator())),
+          hasLoaded == false
+              ? Expanded(
+                  child: ListView.builder(
+                      padding: EdgeInsets.all(10.0),
+                      itemCount: movies.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return new Container();
+                      }),
+                )
+              : Container(),
+        ],
       ),
     );
+  }
+
+  void searchMovies(query) {
+    resetMovies();
+    if (query.isEmpty) {
+      setState(() {
+        hasLoaded = true;
+      });
+      return;
+    }
+    setState(() => hasLoaded = false);
+
+    http
+        .get(
+            'https://api.themoviedb.org/3/search/movie?api_key=$key&query=$query')
+        .then((res) => (res.body))
+        .then(json.decode)
+        .then((map) => map["results"])
+        .then((movies) => movies.forEach(addMovie))
+        .catchError(onError)
+        .then((e) {
+      setState(() {
+        hasLoaded = true;
+      });
+    });
+  }
+
+  void onError(dynamic d) {
+    setState(() {
+      hasLoaded = true;
+    });
+  }
+
+  void resetMovies() {
+    setState(() => movies.clear());
+  }
+
+  void addMovie(item) {
+    setState(() {
+      movies.add(Movie.fromJson(item));
+    });
   }
 }
