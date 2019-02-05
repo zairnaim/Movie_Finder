@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'apikeys.dart';
 
-final String key =  APIkeys().key;
+final String key = APIkeys().key;
 
 void main() => runApp(MyApp());
 
@@ -44,7 +44,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-
     subject.stream.debounce(Duration(milliseconds: 400)).listen(searchMovies);
   }
 
@@ -62,20 +61,17 @@ class _MyHomePageState extends State<MyHomePage> {
               onChanged: (String string) => (subject.add(string)),
             ),
           ),
+          hasLoaded
+              ? Container()
+              : Expanded(child: Center(child: CircularProgressIndicator())),
           Expanded(
-              child: Center(
-                  child:
-                      hasLoaded ? Container() : CircularProgressIndicator())),
-          hasLoaded == false
-              ? Expanded(
-                  child: ListView.builder(
-                      padding: EdgeInsets.all(10.0),
-                      itemCount: movies.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        return new Container();
-                      }),
-                )
-              : Container(),
+            child: ListView.builder(
+                padding: EdgeInsets.all(10.0),
+                itemCount: movies.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return new MovieView(movies[index]);
+                }),
+          )
         ],
       ),
     );
@@ -120,5 +116,51 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       movies.add(Movie.fromJson(item));
     });
+    print('${movies.map((m) => m.title)}');
+  }
+}
+
+class MovieView extends StatefulWidget {
+  MovieView(this.movie);
+  final Movie movie;
+
+  @override
+  MovieViewState createState() => MovieViewState();
+}
+
+class MovieViewState extends State<MovieView> {
+  Movie movieState;
+
+  @override
+  void initState() {
+    super.initState();
+    movieState = widget.movie;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Container(
+        height: 200.0,
+        padding: EdgeInsets.all(10.0),
+        child: Row(children: [
+          movieState.posterPath != null
+              ? Hero(
+                  child: Image.network(
+                      "https://image.tmdb.org/t/p/w92${movieState.posterPath}"),
+                  tag: movieState.id,
+                )
+              : Container(),
+          Expanded(
+            child: Center(
+              child: Text(
+                movieState.title,
+                maxLines: 10,
+              ),
+            ),
+          )
+        ]),
+      ),
+    );
   }
 }
