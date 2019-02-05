@@ -3,8 +3,9 @@ import 'package:movie_finder/model/model.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'apikeys.dart';
 
-const key = '';
+final String key =  APIkeys().key;
 
 void main() => runApp(MyApp());
 
