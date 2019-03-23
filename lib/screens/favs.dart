@@ -39,6 +39,12 @@ class FavsState extends State<Favs> {
     super.dispose();
   }
 
+  void onPressedDelete(int index) {
+    setState(() {
+      filteredMovies.remove(filteredMovies[index]);
+    });
+  }
+
   void searchDataList(query) {}
 
   @override
@@ -62,7 +68,9 @@ class FavsState extends State<Favs> {
                   children: <Widget>[],
                   leading: IconButton(
                     icon: Icon(Icons.delete),
-                    onPressed: () {},
+                    onPressed: () {
+                      onPressedDelete(index);
+                    },
                   ),
                   title: Container(
                     height: 200.0,
